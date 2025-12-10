@@ -50,12 +50,12 @@ text_post = {
 
 @app.get("/posts")
 def get_all_posts(limit: int = None, page: int = 1):
+    all_posts = list(text_post.values())
     if limit:
-        all_posts = list(text_post.values())
         start_index = (page - 1) * limit
         end_index = start_index + limit
         return all_posts[start_index:end_index]
-    return text_post
+    return all_posts
 
 
 @app.get("/posts/{post_id}")
