@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
-from src.schemas import PostCreate
+from src.schemas import PostCreate, PostResponse
+from typing import List
 
 
 app = FastAPI()
@@ -49,8 +50,8 @@ text_post = {
 
 
 @app.get("/posts")
-def get_all_posts(limit: int = None, page: int = 1):
-    all_posts = list(text_post.values())
+def get_all_posts(limit: int = None, page: int = 1) -> List[PostResponse]:
+    all_posts = [PostResponse(id=post_id, **post_data) for post_id, post_data in text_post.items()]
     if limit:
         start_index = (page - 1) * limit
         end_index = start_index + limit
@@ -59,15 +60,15 @@ def get_all_posts(limit: int = None, page: int = 1):
 
 
 @app.get("/posts/{post_id}")
-def get_post(post_id: int):
+def get_post(post_id: int) -> PostResponse:
     if post_id not in text_post:
         raise HTTPException(status_code=404, detail="Post not found")
-    return text_post.get(post_id)
+    return PostResponse(id=post_id, **text_post.get(post_id))
 
 
 @app.post("/posts")
-def create_post(post: PostCreate):
+def create_post(post: PostCreate) -> PostResponse:
     new_post_id = max(text_post.keys()) + 1
     text_post[new_post_id] = post
-    return text_post[new_post_id]
+    return PostResponse(id=new_post_id, **post.dict())
 
