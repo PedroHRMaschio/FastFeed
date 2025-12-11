@@ -40,7 +40,7 @@ async def get_feed(
     session: AsyncSession = Depends(get_async_session)
 ):
     result = await session.execute(select(Post).order_by(Post.created_at.desc()))
-    posts = [row[0] for row in result.all()]
+    posts = result.scalars().all()
 
     posts_data = []
     for post in posts:
