@@ -40,15 +40,7 @@ git clone https://github.com/PedroHRMaschio/FastFeed.git
 cd FastFeed
 ```
 
-Create a virtual environment:
-
-```bash
-python3 -m venv venv
-source venv/bin/activate  # Linux/Mac
-venv\Scripts\activate     # Windows
-```
-
-Install dependencies:
+Install dependencies (this will automatically create a virtual environment):
 
 ```bash
 uv sync
