@@ -27,6 +27,7 @@ Inspired by the first versions of Instagram — built for study, practice and po
 | **Pydantic**           | Data validation and schema modeling           |
 | **SQL/NoSQL Database** | Persistent storage for users, posts & follows |
 | **GitHub**             | Version control & portfolio hosting           |
+| **ImageKit**           | Image storage and delivery                    |
 
 ---
 
