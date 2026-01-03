@@ -114,7 +114,7 @@ def create_transformed_url(original_url, transformation_params, caption=None):
 def feed_page():
     st.title("🏠 Feed")
 
-    response = requests.get("http://localhost:8000/feed", headers=get_headers())
+    response = requests.get("http://localhost:8000/posts/feed", headers=get_headers())
     if response.status_code == 200:
         posts = response.json()["posts"]
 
