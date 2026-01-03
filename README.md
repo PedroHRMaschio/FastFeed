@@ -83,7 +83,7 @@ http://localhost:8501
 
 * [x] Add JWT authentication
 * [x] Enable image storage (ImageKit)
-* [ ] Build UI for user interaction
+* [x] Build UI for user interaction
 * [ ] Add comments + likes system
 * [ ] Add notifications feed
 
