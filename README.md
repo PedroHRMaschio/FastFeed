@@ -48,6 +48,32 @@ uv sync
 
 ---
 
+## ⚙️ Configuration
+
+Create a `.env` file in the root directory with the following variables:
+
+```bash
+# JWT Authentication
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+JWT_LIFETIME=3600
+
+# ImageKit Configuration
+IMAGEKIT_URL=https://ik.imagekit.io/your-imagekit-id
+IMAGEKIT_PUBLIC_KEY=your-imagekit-public-key
+IMAGEKIT_FILE_KEY=your-imagekit-private-key
+```
+
+> [!TIP]
+> A template file `.env.example` is provided in the repository. Copy it to `.env` and fill in your actual values.
+
+**Getting ImageKit Credentials:**
+1. Sign up for a free account at [ImageKit.io](https://imagekit.io/)
+2. Go to your dashboard → Developer Options
+3. Copy your URL endpoint, Public Key, and Private Key
+4. Paste them into your `.env` file
+
+---
+
 ## ▶ Running the Project
 
 ### 1. Start the Backend
