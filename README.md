@@ -66,7 +66,7 @@ http://localhost:8000/docs
 
 ## 🗺 Roadmap
 
-* [ ] Add JWT authentication
+* [x] Add JWT authentication
 * [ ] Enable image storage (local / S3 / Cloud)
 * [ ] Build UI for user interaction
 * [ ] Add comments + likes system
