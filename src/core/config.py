@@ -11,3 +11,6 @@ JWT_LIFETIME = int(os.getenv("JWT_LIFETIME", "3600"))
 IMAGEKIT_URL = os.getenv("IMAGEKIT_URL")
 IMAGEKIT_PUBLIC_KEY = os.getenv("IMAGEKIT_PUBLIC_KEY")
 IMAGEKIT_FILE_KEY = os.getenv("IMAGEKIT_FILE_KEY")
+
+# Database Configuration
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./test.db")

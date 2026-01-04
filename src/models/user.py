@@ -12,4 +12,8 @@ class Base(DeclarativeBase):
 
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
+    """User model representing a registered user in the system."""
     posts = relationship("Post", back_populates="user")
+    
+    def __repr__(self):
+        return f"<User {self.email}>"

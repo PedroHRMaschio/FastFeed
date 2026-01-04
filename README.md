@@ -20,14 +20,33 @@ Inspired by the first versions of Instagram — built for study, practice and po
 
 ## 🛠 Tech Stack
 
-| Technology             | Purpose                                       |
-| ---------------------- | --------------------------------------------- |
-| **Python**             | Backend language                              |
-| **FastAPI**            | Web framework & API layer                     |
-| **Pydantic**           | Data validation and schema modeling           |
-| **SQL/NoSQL Database** | Persistent storage for users, posts & follows |
-| **GitHub**             | Version control & portfolio hosting           |
-| **ImageKit**           | Image storage and delivery                    |
+| Category      | Technology                | Purpose                         |
+|---------------|---------------------------|---------------------------------|
+| **Core**      | Python 3.12+              | Modern language features        |
+| **Framework** | FastAPI                   | High-performance async API      |
+| **Database**  | SQLAlchemy + Aiosqlite    | Async ORM & persistence         |
+| **Auth**      | JWT + FastAPI Users       | Secure authentication flow      |
+| **Storage**   | ImageKit                  | Media optimization & CDN        |
+| **Frontend**  | Streamlit                 | Rapid UI prototyping            |
+| **Tools**     | uv                        | Fast package management         |
+
+---
+
+## 🏗 Architecture
+
+The project follows a modular architecture:
+
+- **Core**: Configuration, database connection, and base utilities
+- **Models**: SQLAlchemy database models
+- **Schemas**: Pydantic models for data validation and serialization
+- **Routers**: API endpoints grouped by feature (Auth, Posts, Users)
+- **Frontend**: Streamlit application consuming the API
+
+### Data Flow
+1. Client Request → FastAPI Router
+2. Router → Pydantic Validation
+3. Router → Service Logic (Uploads, DB operations)
+4. Response → Client (JSON)
 
 ---
 
@@ -120,3 +139,12 @@ http://localhost:8501
 This project is open-source and free to use.
 
 ---
+
+## 👏 Acknowledgments
+
+- Core project concept and initial logic inspired by **[Tech With Tim - Learn Fast API With This ONE Project](https://www.youtube.com/watch?v=SR5NYCdzKkc)**.
+- Refactored and enhanced by **PedroHRMaschio** with:
+    - Modular architecture
+    - Async database implementation
+    - Professional production configuration
+    - Type safety and documentation

@@ -8,7 +8,10 @@ from sqlalchemy.orm import relationship
 from src.models.user import Base
 
 
+from datetime import datetime, timezone
+
 class Post(Base):
+    """Post model representing a user's upload."""
     __tablename__ = "posts"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
@@ -16,8 +19,11 @@ class Post(Base):
     url = Column(String, nullable=False)
     file_type = Column(String, nullable=False)
     file_name = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     user = relationship("User", back_populates="posts")
+    
+    def __repr__(self):
+        return f"<Post {self.id} by {self.user_id}>"
 
     def to_dict(self):
         return {

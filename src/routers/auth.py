@@ -20,6 +20,16 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         password: str,
         user: models.UP,
     ) -> Optional[str]:
+        """
+        Validate the password requirements.
+        
+        Args:
+            password (str): The password to validate.
+            user (models.UP): The user object.
+            
+        Returns:
+            Optional[str]: Error message if invalid, None if valid.
+        """
         if len(password) < 8:
             return "Password must be at least 8 characters long"
         return None
@@ -27,20 +37,24 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     async def on_after_register(
         self, user: User, request: Optional[Request] = None
     ):
+        """Callback executed after successful user registration."""
         print(f"User {user.id} has registered successfully!")
 
     async def on_after_forgot_password(
         self, user: User, request: Optional[Request] = None
     ):
+        """Callback executed after a user requests a password reset."""
         print(f"User {user.id} has forgot their password. Reset token: {user.verification_token}")
 
     async def on_after_request_verify(
         self, user: User, token: str, request: Optional[Request] = None
     ):
+        """Callback executed after a user requests email verification."""
         print(f"Verification requested for user {user.id}. Verification token: {token}")
 
 
 async def get_user_manager(user_db: SQLAlchemyUserDatabase = Depends(get_user_db)):
+    """Dependency to get the user manager instance."""
     yield UserManager(user_db)
 
 
@@ -48,6 +62,7 @@ bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
 
 
 def get_jwt_strategy() -> JWTStrategy:
+    """Return the JWT strategy with configured secret and lifetime."""
     return JWTStrategy(secret=JWT_SECRET, lifetime_seconds=JWT_LIFETIME)
 
 

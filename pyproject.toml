@@ -1,9 +1,14 @@
 [project]
 name = "fastfeed"
 version = "0.1.0"
-description = "Add your description here"
+description = "A production-ready social media backend built with FastAPI"
+authors = [
+    { name = "PedroHRMaschio", email = "pedrohenriquermaschio@gmail.com" }
+]
+license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.12"
+keywords = ["fastapi", "social-media", "backend", "python", "async"]
 dependencies = [
     "aiosqlite>=0.21.0",
     "fastapi>=0.123.0",
