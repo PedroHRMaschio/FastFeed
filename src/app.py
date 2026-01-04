@@ -12,7 +12,12 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title="FastFeed",
+    description="A fast and simple social media feed API",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
 # Include authentication routers
 app.include_router(
