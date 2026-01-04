@@ -1,4 +1,3 @@
-import os
 import uuid
 from typing import Optional
 
@@ -9,9 +8,10 @@ from fastapi_users.db import SQLAlchemyUserDatabase
 
 from src.models import User
 from src.core.database import get_user_db
+from src.core.config import JWT_SECRET, JWT_LIFETIME
 
-SECRET = os.getenv("JWT_SECRET")
-LIFETIME = int(os.getenv("JWT_LIFETIME"))
+SECRET = JWT_SECRET
+LIFETIME = JWT_LIFETIME
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):

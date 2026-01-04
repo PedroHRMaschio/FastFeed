@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from imagekitio.models.UploadFileRequestOptions import UploadFileRequestOptions
 from fastapi import APIRouter, HTTPException, File, UploadFile, Form, Depends, status
 
-from src.core.config import imagekit
+from src.core.imagekit import imagekit
 from src.core.database import get_async_session
 from src.models import Post, User
 from src.dependencies import current_active_user

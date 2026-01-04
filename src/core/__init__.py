@@ -1,4 +1,4 @@
-from src.core.config import imagekit
+from src.core.imagekit import imagekit
 from src.core.database import (
     engine,
     SessionLocal,
