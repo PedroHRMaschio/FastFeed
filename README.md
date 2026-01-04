@@ -22,7 +22,7 @@ Inspired by the first versions of Instagram — built for study, practice and po
 
 | Category      | Technology                | Purpose                         |
 |---------------|---------------------------|---------------------------------|
-| **Core**      | Python 3.12+              | Modern language features        |
+| **Core**      | Python 3.14+              | Modern language features        |
 | **Framework** | FastAPI                   | High-performance async API      |
 | **Database**  | SQLAlchemy + Aiosqlite    | Async ORM & persistence         |
 | **Auth**      | JWT + FastAPI Users       | Secure authentication flow      |
