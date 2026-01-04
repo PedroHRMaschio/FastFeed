@@ -10,13 +10,10 @@ from src.models import User
 from src.core.database import get_user_db
 from src.core.config import JWT_SECRET, JWT_LIFETIME
 
-SECRET = JWT_SECRET
-LIFETIME = JWT_LIFETIME
-
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
-    reset_password_token_secret = SECRET
-    verification_token_secret = SECRET
+    reset_password_token_secret = JWT_SECRET
+    verification_token_secret = JWT_SECRET
 
     async def validate_password(
         self,
@@ -51,7 +48,7 @@ bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
 
 
 def get_jwt_strategy() -> JWTStrategy:
-    return JWTStrategy(secret=SECRET, lifetime_seconds=LIFETIME)
+    return JWTStrategy(secret=JWT_SECRET, lifetime_seconds=JWT_LIFETIME)
 
 
 auth_backend = AuthenticationBackend(
