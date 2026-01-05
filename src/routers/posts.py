@@ -200,7 +200,7 @@ async def delete_post(
                 "name": post.file_name,
                 "limit": 1
             })
-            
+
             # Check if we found the file and safely access the list
             if files and hasattr(files, 'list') and files.list:
                 file_id = files.list[0].file_id
@@ -208,7 +208,7 @@ async def delete_post(
                 logger.info(f"Deleted file {post.file_name} ({file_id}) from ImageKit")
             else:
                 logger.warning(f"Could not find file {post.file_name} in ImageKit for deletion")
-                
+
         except Exception as e:
              logger.warning(f"Failed to delete file from ImageKit: {e}")
 

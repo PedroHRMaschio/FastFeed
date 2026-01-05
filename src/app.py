@@ -24,9 +24,9 @@ app = FastAPI(
     - 🔐 **Authentication**: JWT-based auth with refresh tokens
     - 📸 **Media Upload**: Integration with ImageKit for image/video storage
     - 🚀 **Performance**: Async database operations
-    
+
     ## Authentication
-    
+
     Most endpoints require authentication. Use the `/auth/jwt/login` endpoint to get a token.
     """,
     version="1.0.0",

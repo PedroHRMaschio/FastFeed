@@ -22,11 +22,11 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
     ) -> Optional[str]:
         """
         Validate the password requirements.
-        
+
         Args:
             password (str): The password to validate.
             user (models.UP): The user object.
-            
+
         Returns:
             Optional[str]: Error message if invalid, None if valid.
         """

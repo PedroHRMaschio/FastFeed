@@ -21,7 +21,7 @@ class Post(Base):
     file_name = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     user = relationship("User", back_populates="posts")
-    
+
     def __repr__(self):
         return f"<Post {self.id} by {self.user_id}>"
 

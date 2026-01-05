@@ -20,7 +20,7 @@ async def create_db_and_tables():
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     """
     Dependency to get an async database session.
-    
+
     Yields:
         AsyncSession: The database session.
     """
@@ -31,10 +31,10 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
 async def get_user_db(session: AsyncSession = Depends(get_async_session)):
     """
     Dependency to get the FastAPI Users database adapter.
-    
+
     Args:
         session (AsyncSession): The database session.
-        
+
     Yields:
         SQLAlchemyUserDatabase: The user database adapter.
     """
