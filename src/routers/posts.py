@@ -1,21 +1,17 @@
-import os
-import uuid
-import shutil
 import logging
-import tempfile
+import uuid
 from typing import List
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
-from imagekitio.models.UploadFileRequestOptions import UploadFileRequestOptions
 from fastapi import APIRouter, HTTPException, File, UploadFile, Form, Depends, status
 
-from src.core.imagekit import imagekit
 from src.core.database import get_async_session
 from src.models import Post, User
 from src.schemas.post import PostResponse, FeedResponse, PostFeedItem
 from src.dependencies import current_active_user
+from src.utils import upload_media, delete_media
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -45,61 +41,28 @@ async def upload_file(
     Raises:
         HTTPException: If upload fails or database error occurs.
     """
-    temp_file_path = None
-
     try:
-        # Create a temporary file to handle the upload
-        suffix = os.path.splitext(file.filename)[1] if file.filename else ""
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
-            temp_file_path = temp_file.name
-            shutil.copyfileobj(file.file, temp_file)
+        # Upload media using utility function
+        url, file_type, file_name, file_id = upload_media(file)
 
-        # Upload to ImageKit
-        # Note: imagekitio library doesn't fully support async yet, so this might block slightly
-        # In a high-scale app, run this in a thread pool
-        with open(temp_file_path, "rb") as f:
-            upload_result = imagekit.upload_file(
-                file=f,
-                file_name=file.filename or f"upload-{uuid.uuid4()}",
-                options=UploadFileRequestOptions(
-                    use_unique_file_name=True,
-                    tags=["backend-upload"]
-                )
-            )
+        post = Post(
+            user_id=user.id,
+            caption=caption,
+            url=url,
+            file_type=file_type,
+            file_name=file_name,
+            file_id=file_id
+        )
+        session.add(post)
+        await session.commit()
+        await session.refresh(post)
+        return post
 
-        if upload_result.response_metadata.http_status_code == 200:
-            content_type = file.content_type or "application/octet-stream"
-            file_type = "video" if content_type.startswith("video/") else "image"
-
-            post = Post(
-                user_id=user.id,
-                caption=caption,
-                url=upload_result.url,
-                file_type=file_type,
-                file_name=upload_result.name
-            )
-            session.add(post)
-            await session.commit()
-            await session.refresh(post)
-            return post
-        else:
-            logger.error(f"ImageKit upload failed: {upload_result.response_metadata}")
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Failed to upload file to storage service"
-            )
-
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("Error creating post")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-    finally:
-        # Clean up temporary file
-        if temp_file_path and os.path.exists(temp_file_path):
-            try:
-                os.unlink(temp_file_path)
-            except OSError as e:
-                logger.warning(f"Failed to delete temp file {temp_file_path}: {e}")
-        file.file.close()
 
 
 @router.get("/feed", response_model=FeedResponse)
@@ -149,6 +112,7 @@ async def get_feed(
                     "file_type": post.file_type,
                     "file_name": post.file_name,
                     "created_at": post.created_at,
+                    "updated_at": post.updated_at,
                     "is_owner": post.user_id == user.id,
                     "email": user_email
                 }
@@ -193,24 +157,8 @@ async def delete_post(
         if post.user_id != user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to delete this post")
 
-        # Delete from ImageKit
-        try:
-            # Since we don't store file_id, we need to find it first using the unique file_name
-            files = imagekit.list_files({
-                "name": post.file_name,
-                "limit": 1
-            })
-
-            # Check if we found the file and safely access the list
-            if files and hasattr(files, 'list') and files.list:
-                file_id = files.list[0].file_id
-                imagekit.delete_file(file_id)
-                logger.info(f"Deleted file {post.file_name} ({file_id}) from ImageKit")
-            else:
-                logger.warning(f"Could not find file {post.file_name} in ImageKit for deletion")
-
-        except Exception as e:
-             logger.warning(f"Failed to delete file from ImageKit: {e}")
+        # Delete from ImageKit using utility
+        delete_media(post.file_id, post.file_name)
 
         await session.delete(post)
         await session.commit()
@@ -219,4 +167,75 @@ async def delete_post(
         raise
     except Exception as e:
         logger.exception(f"Error deleting post {post_id}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
+
+
+@router.patch("/{post_id}", response_model=PostResponse)
+async def update_post(
+    post_id: str,
+    caption: str | None = Form(None),
+    file: UploadFile | str | None = File(None),
+    session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_active_user)
+) -> Post:
+    """
+    Update a specific post (caption and/or file).
+
+    Args:
+        post_id (str): UUID string of the post to update.
+        caption (str | None): New caption (optional).
+        file (UploadFile | str | None): New file to replace the existing one (optional).
+                                      Note: str allowed to handle empty form fields from some clients.
+        session (AsyncSession): Database session.
+        user (User): Current authenticated user.
+
+    Returns:
+        Post: The updated post object.
+    """
+    try:
+        try:
+            post_uuid = uuid.UUID(post_id)
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid post ID format")
+
+        result = await session.execute(select(Post).where(Post.id == post_uuid))
+        post = result.scalars().first()
+
+        if not post:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+
+        if post.user_id != user.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to update this post")
+
+        # Update caption if provided
+        if caption is not None:
+            post.caption = caption
+
+        # Update file if provided and valid (check for filename to ensure it's a file object)
+        if file and hasattr(file, 'filename') and file.filename:
+            # 1. Delete old file from ImageKit using utility
+            delete_media(post.file_id, post.file_name)
+
+            # 2. Upload new file using utility
+            # Note: upload_media handles the whole temp file process
+            url, file_type, file_name, file_id = upload_media(file)
+
+            # Update post with new file details
+            post.url = url
+            post.file_type = file_type
+            post.file_name = file_name
+            post.file_id = file_id
+
+        # Update timestamp (managed by onupdate in model, but we can trigger it)
+        # SQLAlchemy handles onupdate automatically when fields change.
+        # But if we want to ensure it, we can touch it, though usually unnecessary.
+        
+        await session.commit()
+        await session.refresh(post)
+        return post
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error updating post {post_id}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")

@@ -142,17 +142,50 @@ def feed_page():
                 # Header with user, date, and delete button (if owner)
                 col1, col2 = st.columns([4, 1])
                 with col1:
-                    st.markdown(f"**{post['email']}** • {post['created_at'][:10]}")
+                    created_date = post['created_at'][:10]
+                    updated_info = f" • (Edited: {post['updated_at'][:10]})" if post.get('updated_at') else ""
+                    st.markdown(f"**{post['email']}** • {created_date}{updated_info}")
                 with col2:
                     if post.get('is_owner', False):
+                        # Delete button
                         if st.button("🗑️", key=f"delete_{post['id']}", help="Delete post"):
-                            # Delete the post
                             del_response = requests.delete(f"{BACKEND_URL}/posts/{post['id']}", headers=get_headers())
                             if del_response.status_code == 200:
                                 st.success("Post deleted!")
                                 st.rerun()
                             else:
                                 st.error("Failed to delete post!")
+
+                        # Edit Expander
+                        with st.expander("✏️ Edit"):
+                            with st.form(key=f"edit_form_{post['id']}"):
+                                new_caption = st.text_area("Caption", value=post.get('caption', ''))
+                                new_file = st.file_uploader("Replace Media", type=['png', 'jpg', 'jpeg', 'mp4', 'avi', 'mov', 'mkv', 'webm'])
+                                
+                                if st.form_submit_button("Update Post"):
+                                    data = {}
+                                    files = None
+                                    
+                                    # Always send caption (even if empty string)
+                                    data["caption"] = new_caption
+                                    
+                                    if new_file:
+                                        files = {"file": (new_file.name, new_file.getvalue(), new_file.type)}
+
+                                    try:
+                                        # Use PATCH method
+                                        if files:
+                                            upd_response = requests.patch(f"{BACKEND_URL}/posts/{post['id']}", data=data, files=files, headers=get_headers())
+                                        else:
+                                            upd_response = requests.patch(f"{BACKEND_URL}/posts/{post['id']}", data=data, headers=get_headers())
+                                            
+                                        if upd_response.status_code == 200:
+                                            st.success("Updated!")
+                                            st.rerun()
+                                        else:
+                                            st.error(f"Update failed: {upd_response.text}")
+                                    except Exception as e:
+                                        st.error(f"Error: {e}")
 
 
             # Uniform media display with caption overlay
