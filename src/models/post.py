@@ -19,7 +19,7 @@ class Post(Base):
     url = Column(String, nullable=False)
     file_type = Column(String, nullable=False)
     file_name = Column(String, nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     user = relationship("User", back_populates="posts")
     
     def __repr__(self):

@@ -20,15 +20,18 @@ Inspired by the first versions of Instagram — built for study, practice and po
 
 ## 🛠 Tech Stack
 
-| Category      | Technology                | Purpose                         |
-|---------------|---------------------------|---------------------------------|
-| **Core**      | Python 3.14+              | Modern language features        |
-| **Framework** | FastAPI                   | High-performance async API      |
-| **Database**  | SQLAlchemy + Aiosqlite    | Async ORM & persistence         |
-| **Auth**      | JWT + FastAPI Users       | Secure authentication flow      |
-| **Storage**   | ImageKit                  | Media optimization & CDN        |
-| **Frontend**  | Streamlit                 | Rapid UI prototyping            |
-| **Tools**     | uv                        | Fast package management         |
+| Category          | Technology                | Purpose                         |
+|-------------------|---------------------------|---------------------------------|
+| **Core**          | Python 3.14+              | Modern language features        |
+| **Framework**     | FastAPI                   | High-performance async API      |
+| **Database**      | SQLAlchemy + Aiosqlite    | Async ORM & persistence         |
+| **Auth**          | JWT + FastAPI Users       | Secure authentication flow      |
+| **Storage**       | ImageKit                  | Media optimization & CDN        |
+| **Frontend**      | Streamlit                 | Rapid UI prototyping            |
+| **Tools**         | uv                        | Fast package management         |
+| **Container**     | Docker                    | Containerization                |
+| **Orchestration** | Docker Compose            | Container orchestration         |
+| **Versioning**    | Git                       | Version control                 |
 
 ---
 
@@ -121,6 +124,28 @@ Access the application:
 ```
 http://localhost:8501
 ```
+
+---
+
+## 🐳 Running with Docker
+
+You can run the entire stack (Backend, Frontend, and Database) with a single command using Docker Compose.
+
+### Prerequisites
+- Docker & Docker Compose installed
+
+### Steps
+
+1. Create a `.env` file with your credentials (see Configuration section).
+2. Run the stack:
+   ```bash
+   docker-compose up --build
+   ```
+
+   This will start:
+   - **Backend**: http://localhost:8000
+   - **Frontend**: http://localhost:8501
+   - **PostgreSQL**: Port 5432
 
 ---
 

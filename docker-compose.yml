@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: fastfeed
+      POSTGRES_PASSWORD: fastfeed_password
+      POSTGRES_DB: fastfeed_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U fastfeed -d fastfeed_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"
+    environment:
+      # Use the 'db' service name as the hostname
+      DATABASE_URL: postgresql+asyncpg://fastfeed:fastfeed_password@db:5432/fastfeed_db
+      # You need to pass your ImageKit credentials here or in a .env file
+      IMAGEKIT_URL: ${IMAGEKIT_URL}
+      IMAGEKIT_PUBLIC_KEY: ${IMAGEKIT_PUBLIC_KEY}
+      IMAGEKIT_FILE_KEY: ${IMAGEKIT_FILE_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_LIFETIME: ${JWT_LIFETIME:-3600}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "8501:8501"
+    environment:
+      BACKEND_URL: ${BACKEND_URL:-http://backend:8000}
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  postgres_data:
