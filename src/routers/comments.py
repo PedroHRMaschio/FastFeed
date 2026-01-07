@@ -88,11 +88,9 @@ async def get_comments(
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid post ID format")
 
         # Fetch all comments for the post
-        # IMPORTANT: Eager load 'user' so we can access email
         result = await session.execute(
             select(Comment)
             .where(Comment.post_id == post_uuid)
-            .options(selectinload(Comment.user))
         )
         comments = result.scalars().all()
 
@@ -101,21 +99,38 @@ async def get_comments(
 
         comment_ids = [c.id for c in comments]
 
-        # Fetch likes count
-        likes_result = await session.execute(
-            select(CommentLike.comment_id, func.count(CommentLike.user_id))
-            .where(CommentLike.comment_id.in_(comment_ids))
-            .group_by(CommentLike.comment_id)
-        )
-        likes_map = {row[0]: row[1] for row in likes_result.all()}
+        # Manual user fetch to ensure reliability (avoiding selectinload issues in some async contexts)
+        user_ids = {c.user_id for c in comments}
+        user_map = {}
+        if user_ids:
+            users_result = await session.execute(
+                select(User).where(User.id.in_(user_ids))
+            )
+            users = users_result.scalars().all()
+            user_map = {u.id: u for u in users}
 
-        # Fetch user likes
-        user_likes_result = await session.execute(
-            select(CommentLike.comment_id)
-            .where(CommentLike.comment_id.in_(comment_ids))
-            .where(CommentLike.user_id == user.id)
-        )
-        user_likes = {row[0] for row in user_likes_result.all()}
+        try:
+            # Fetch likes count
+            likes_result = await session.execute(
+                select(CommentLike.comment_id, func.count(CommentLike.user_id))
+                .where(CommentLike.comment_id.in_(comment_ids))
+                .group_by(CommentLike.comment_id)
+            )
+            likes_map = {row[0]: row[1] for row in likes_result.all()}
+
+            # Fetch user likes
+            user_likes_result = await session.execute(
+                select(CommentLike.comment_id)
+                .where(CommentLike.comment_id.in_(comment_ids))
+                .where(CommentLike.user_id == user.id)
+            )
+            user_likes = {row[0] for row in user_likes_result.all()}
+        except Exception as e:
+            print(f"Error fetching likes: {e}")
+            import traceback
+            traceback.print_exc()
+            likes_map = {}
+            user_likes = set()
 
         # Build tree
         comment_map = {}
@@ -123,19 +138,9 @@ async def get_comments(
 
         # First pass: create CommentRead objects
         for comment in comments:
-            # Handle potential missing user (though should be enforced by FK)
-            # The 'selectinload' above should have populated it.
-            # If it's None, it might be due to session expire/refresh behavior or testing artifacts.
-
             user_email = "Unknown"
-            if comment.user:
-                user_email = comment.user.email
-            else:
-                # Try to reload if missing? Or just log warning?
-                # In sqlite+asyncio tests, sometimes relationships need explicit handling or refresh?
-                # But selectinload usually works.
-                # Let's try to fetch user if missing
-                pass
+            if comment.user_id in user_map:
+                user_email = user_map[comment.user_id].email
 
             comment_read = CommentRead(
                 id=comment.id,

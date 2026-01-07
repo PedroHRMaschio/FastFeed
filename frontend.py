@@ -87,7 +87,7 @@ def upload_page():
             try:
                 response = requests.post(f"{BACKEND_URL}/posts", files=files, data=data, headers=get_headers())
 
-                if response.status_code == 200:
+                if response.status_code in [200, 201]:
                     st.success("Posted!")
                     st.rerun()
                 else:
