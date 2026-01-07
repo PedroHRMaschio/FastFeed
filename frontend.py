@@ -14,6 +14,8 @@ if 'token' not in st.session_state:
     st.session_state.token = None
 if 'user' not in st.session_state:
     st.session_state.user = None
+if 'success_message' not in st.session_state:
+    st.session_state.success_message = None
 
 
 def get_headers():
@@ -75,6 +77,11 @@ def login_page():
 
 
 def upload_page():
+    # Display success message if pending
+    if st.session_state.success_message:
+        st.success(st.session_state.success_message)
+        st.session_state.success_message = None
+
     st.title("📸 Share Something")
 
     uploaded_file = st.file_uploader("Choose media", type=['png', 'jpg', 'jpeg', 'mp4', 'avi', 'mov', 'mkv', 'webm'])
@@ -87,8 +94,8 @@ def upload_page():
             try:
                 response = requests.post(f"{BACKEND_URL}/posts", files=files, data=data, headers=get_headers())
 
-                if response.status_code == 200:
-                    st.success("Posted!")
+                if response.status_code in [200, 201]:
+                    st.session_state.success_message = "Posted successfully!"
                     st.rerun()
                 else:
                     st.error("Upload failed!")
@@ -219,6 +226,79 @@ def feed_page():
                             st.error("Action failed")
                     except requests.exceptions.ConnectionError:
                         st.error("Connection error")
+
+            # Comments section
+            with st.expander("💬 Comments"):
+                # Fetch comments
+                try:
+                    comments_resp = requests.get(f"{BACKEND_URL}/posts/{post['id']}/comments", headers=get_headers())
+                    if comments_resp.status_code == 200:
+                        comments = comments_resp.json()
+
+                        def display_comments(comment_list, depth=0):
+                            for comment in comment_list:
+                                # Determine indentation using columns
+                                if depth > 0:
+                                    # Create an empty column for indentation and a main column for content
+                                    # Increasing the ratio for indentation makes it more visible
+                                    cols = st.columns([0.05 * depth, 1])
+                                    container = cols[1]
+                                else:
+                                    container = st.container()
+
+                                with container:
+                                    st.markdown(f"**{comment['email']}**: {comment['content']}")
+
+                                    # Like and Reply buttons for comment
+                                    col_c1, col_c2, col_c3 = st.columns([1, 1, 8])
+                                    with col_c1:
+                                        c_is_liked = comment.get('is_liked', False)
+                                        c_likes_count = comment.get('likes_count', 0)
+                                        c_like_label = "❤️" if c_is_liked else "🤍"
+                                        if st.button(f"{c_like_label} {c_likes_count}", key=f"clike_{comment['id']}"):
+                                            try:
+                                                if c_is_liked:
+                                                    requests.delete(f"{BACKEND_URL}/comments/{comment['id']}/like", headers=get_headers())
+                                                else:
+                                                    requests.post(f"{BACKEND_URL}/comments/{comment['id']}/like", headers=get_headers())
+                                                st.rerun()
+                                            except:
+                                                pass
+
+                                    # Reply form
+                                    with col_c2:
+                                        with st.popover("↩️ Reply"):
+                                            with st.form(key=f"reply_{comment['id']}"):
+                                                reply_text = st.text_input("Reply", key=f"reply_input_{comment['id']}")
+                                                if st.form_submit_button("Post Reply"):
+                                                    if reply_text:
+                                                        requests.post(
+                                                            f"{BACKEND_URL}/posts/{post['id']}/comments",
+                                                            json={"content": reply_text, "parent_id": comment['id']},
+                                                            headers=get_headers()
+                                                        )
+                                                        st.rerun()
+
+                                    if comment.get('children'):
+                                        display_comments(comment['children'], depth + 1)
+
+                        display_comments(comments)
+                    else:
+                        st.write("Could not load comments")
+                except Exception as e:
+                    st.write(f"Error loading comments: {e}")
+
+                # New root comment form
+                with st.form(key=f"new_comment_{post['id']}"):
+                    new_comment_text = st.text_input("Add a comment...")
+                    if st.form_submit_button("Post"):
+                        if new_comment_text:
+                            requests.post(
+                                f"{BACKEND_URL}/posts/{post['id']}/comments",
+                                json={"content": new_comment_text},
+                                headers=get_headers()
+                            )
+                            st.rerun()
 
             st.markdown("")  # Space between posts
         else:

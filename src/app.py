@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.core.database import create_db_and_tables
-from src.routers import fastapi_users, auth_backend, posts_router
+from src.routers import fastapi_users, auth_backend, posts_router, comments_router
 from src.schemas import UserRead, UserCreate, UserUpdate
 
 logging.basicConfig(level=logging.INFO)
@@ -101,3 +101,4 @@ app.include_router(
 
 # Include posts router
 app.include_router(posts_router)
+app.include_router(comments_router)
