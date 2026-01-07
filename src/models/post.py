@@ -23,6 +23,7 @@ class Post(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc), nullable=True)
     user = relationship("User", back_populates="posts")
+    likes = relationship("Like", back_populates="post", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Post {self.id} by {self.user_id}>"
