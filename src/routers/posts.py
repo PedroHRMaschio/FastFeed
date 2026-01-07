@@ -2,13 +2,13 @@ import logging
 import uuid
 from typing import List
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, HTTPException, File, UploadFile, Form, Depends, status
 
 from src.core.database import get_async_session
-from src.models import Post, User
+from src.models import Post, User, Like
 from src.schemas.post import PostResponse, FeedResponse, PostFeedItem
 from src.dependencies import current_active_user
 from src.utils import upload_media, delete_media
@@ -97,6 +97,28 @@ async def get_feed(
         users = result.scalars().all()
         user_dict = {user.id: user.email for user in users}
 
+    # Fetch likes count and user liked status
+    post_ids = [post.id for post in posts]
+    likes_data = {}
+    user_likes = set()
+
+    if post_ids:
+        # Count likes for each post
+        likes_result = await session.execute(
+            select(Like.post_id, func.count(Like.user_id))
+            .where(Like.post_id.in_(post_ids))
+            .group_by(Like.post_id)
+        )
+        likes_data = {row[0]: row[1] for row in likes_result.all()}
+
+        # Check which posts the current user liked
+        user_likes_result = await session.execute(
+            select(Like.post_id)
+            .where(Like.post_id.in_(post_ids))
+            .where(Like.user_id == user.id)
+        )
+        user_likes = {row[0] for row in user_likes_result.all()}
+
     posts_data = []
     for post in posts:
         # Get email from dictionary, fallback to "Unknown User"
@@ -114,7 +136,9 @@ async def get_feed(
                     "created_at": post.created_at,
                     "updated_at": post.updated_at,
                     "is_owner": post.user_id == user.id,
-                    "email": user_email
+                    "email": user_email,
+                    "likes_count": likes_data.get(post.id, 0),
+                    "is_liked": post.id in user_likes
                 }
             )
         )
@@ -167,6 +191,103 @@ async def delete_post(
         raise
     except Exception as e:
         logger.exception(f"Error deleting post {post_id}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
+
+
+@router.post("/{post_id}/like", status_code=status.HTTP_201_CREATED)
+async def like_post(
+    post_id: str,
+    session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_active_user)
+) -> dict:
+    """
+    Like a specific post.
+
+    Args:
+        post_id (str): UUID string of the post to like.
+        session (AsyncSession): Database session.
+        user (User): Current authenticated user.
+
+    Returns:
+        dict: Success message.
+    """
+    try:
+        try:
+            post_uuid = uuid.UUID(post_id)
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid post ID format")
+
+        result = await session.execute(select(Post).where(Post.id == post_uuid))
+        post = result.scalars().first()
+
+        if not post:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+
+        # Check if already liked
+        existing_like = await session.execute(
+            select(Like).where(Like.user_id == user.id, Like.post_id == post_uuid)
+        )
+        if existing_like.scalars().first():
+            return {"message": "Post already liked"}
+
+        like = Like(user_id=user.id, post_id=post_uuid)
+        session.add(like)
+        await session.commit()
+        return {"message": "Post liked successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error liking post {post_id}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
+
+
+@router.delete("/{post_id}/like", status_code=status.HTTP_200_OK)
+async def unlike_post(
+    post_id: str,
+    session: AsyncSession = Depends(get_async_session),
+    user: User = Depends(current_active_user)
+) -> dict:
+    """
+    Unlike a specific post.
+
+    Args:
+        post_id (str): UUID string of the post to unlike.
+        session (AsyncSession): Database session.
+        user (User): Current authenticated user.
+
+    Returns:
+        dict: Success message.
+    """
+    try:
+        try:
+            post_uuid = uuid.UUID(post_id)
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid post ID format")
+
+        result = await session.execute(select(Post).where(Post.id == post_uuid))
+        post = result.scalars().first()
+
+        if not post:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+
+        # Check if liked
+        result = await session.execute(
+            select(Like).where(Like.user_id == user.id, Like.post_id == post_uuid)
+        )
+        like = result.scalars().first()
+
+        if not like:
+            return {"message": "Post not liked yet"}
+
+        await session.delete(like)
+        await session.commit()
+        return {"message": "Post unliked successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error unliking post {post_id}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
 
 

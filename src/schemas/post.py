@@ -26,6 +26,8 @@ class PostFeedItem(PostResponse):
     """Schema for a post item in the feed, including ownership status."""
     is_owner: bool
     email: str
+    likes_count: int
+    is_liked: bool
 
 
 class FeedResponse(BaseModel):
