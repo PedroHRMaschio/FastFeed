@@ -199,6 +199,27 @@ def feed_page():
                 st.video(uniform_video_url, width=300)
                 st.caption(caption)
 
+            # Likes section
+            likes_col1, likes_col2 = st.columns([1, 6])
+            with likes_col1:
+                is_liked = post.get('is_liked', False)
+                likes_count = post.get('likes_count', 0)
+                like_btn_label = "❤️" if is_liked else "🤍"
+
+                if st.button(f"{like_btn_label} {likes_count}", key=f"like_{post['id']}"):
+                    try:
+                        if is_liked:
+                            resp = requests.delete(f"{BACKEND_URL}/posts/{post['id']}/like", headers=get_headers())
+                        else:
+                            resp = requests.post(f"{BACKEND_URL}/posts/{post['id']}/like", headers=get_headers())
+
+                        if resp.status_code in [200, 201]:
+                            st.rerun()
+                        else:
+                            st.error("Action failed")
+                    except requests.exceptions.ConnectionError:
+                        st.error("Connection error")
+
             st.markdown("")  # Space between posts
         else:
             st.error("Failed to load feed")
