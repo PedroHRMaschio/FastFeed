@@ -127,6 +127,51 @@ http://localhost:8501
 
 ---
 
+---
+
+## 🧪 Testing
+
+This project uses **pytest** for unit and integration testing.
+
+### Running Tests
+
+Run all tests with:
+
+```bash
+uv run pytest
+```
+
+To run tests with verbose output:
+
+```bash
+uv run pytest -v
+```
+
+### Test Structure
+
+- `tests/conftest.py`: Test configuration and fixtures (database, client).
+- `tests/test_app.py`: General application tests (health checks).
+- `tests/test_media.py`: Unit tests for media utility functions (mocked ImageKit).
+
+### Code Coverage
+
+To generate a code coverage report (automatically configured in `pyproject.toml`):
+
+```bash
+uv run pytest
+```
+
+The configuration in `pyproject.toml` automatically adds `--cov=src` and `--cov-report=term-missing`.
+
+For an HTML report (useful for visualizing missing lines):
+
+```bash
+uv run pytest --cov-report=html
+```
+Then open `htmlcov/index.html` in your browser.
+
+---
+
 ## 🐳 Running with Docker
 
 You can run the entire stack (Backend, Frontend, and Database) with a single command using Docker Compose.
